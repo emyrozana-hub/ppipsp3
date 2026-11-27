@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Industry Collaboration Database — CISEC &amp; UPLI</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #f1f5f9; color: #1e293b; font-size: 14px; }
+
+  /* ── Header ── */
+  .header { background: #1e3a5f; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+  .header-logo { background: #fff; color: #1e3a5f; font-weight: 900; font-size: 16px; border-radius: 8px; padding: 7px 11px; letter-spacing: 1px; white-space: nowrap; }
+  .header-text h1 { font-size: 16px; font-weight: 700; line-height: 1.3; }
+  .header-text p  { font-size: 12px; opacity: 0.75; margin-top: 3px; }
+  .header-badge { margin-left: auto; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 14px; font-size: 11px; white-space: nowrap; }
+
+  /* ── Tab Navigation ── */
+  .tab-nav { background: #fff; border-bottom: 2px solid #e2e8f0; display: flex; overflow-x: auto; padding: 0 20px; }
+  .tab-btn { padding: 13px 18px; font-size: 13px; font-weight: 600; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: color .2s, border-color .2s; margin-bottom: -2px; }
+  .tab-btn:hover { color: #1e3a5f; }
+  .tab-btn.active { color: #1e3a5f; border-bottom-color: #1e3a5f; }
+
+  /* ── Page ── */
+  .page { max-width: 1400px; margin: 0 auto; padding: 20px 16px 48px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── Section title ── */
+  .section-title { font-size: 15px; font-weight: 700; color: #1e3a5f; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  .section-sub { font-size: 12px; color: #64748b; font-weight: 400; margin-left: 8px; }
+
+  /* ── KPI Grid ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 14px; text-align: center; border-top: 4px solid #94a3b8; }
+  .kpi-card.c1 { border-top-color: #1e3a5f; } .kpi-card.c1 .kpi-value { color: #1e3a5f; }
+  .kpi-card.c2 { border-top-color: #7c3aed; } .kpi-card.c2 .kpi-value { color: #7c3aed; }
+  .kpi-card.c3 { border-top-color: #059669; } .kpi-card.c3 .kpi-value { color: #059669; }
+  .kpi-card.c4 { border-top-color: #d97706; } .kpi-card.c4 .kpi-value { color: #d97706; }
+  .kpi-card.c5 { border-top-color: #db2777; } .kpi-card.c5 .kpi-value { color: #db2777; }
+  .kpi-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-label-en { font-size: 10px; color: #94a3b8; font-weight: 400; margin-top: 1px; }
+  .kpi-value { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
+  .kpi-sub { font-size: 11px; color: #94a3b8; }
+
+  /* ── Chart cards ── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .charts-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; }
+  .chart-card h2 { font-size: 13px; font-weight: 700; color: #1e3a5f; margin-bottom: 14px; }
+  .chart-card h2 span { font-size: 11px; color: #94a3b8; font-weight: 400; margin-left: 6px; }
+  .donut-wrap { max-width: 260px; margin: 0 auto; }
+  .bar-wrap { height: 240px; }
+
+  /* ── Filter bar ── */
+  .filter-bar { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-bar label { font-size: 12px; font-weight: 700; color: #475569; }
+  .filter-bar select, .filter-bar input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 13px; color: #1e293b; background: #f8fafc; cursor: pointer; }
+  .filter-bar input { cursor: text; min-width: 180px; }
+  .filter-bar select:focus, .filter-bar input:focus { outline: 2px solid #1e3a5f; outline-offset: 1px; }
+  .btn-reset { margin-left: auto; background: #e2e8f0; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; }
+  .btn-reset:hover { background: #cbd5e1; }
+
+  /* ── Tables ── */
+  .table-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; overflow-x: auto; margin-bottom: 20px; }
+  .table-card h2 { font-size: 13px; font-weight: 700; color: #1e3a5f; margin-bottom: 12px; }
+  .table-info { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  thead th { background: #f0f4f9; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #475569; padding: 9px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 9px 10px; font-size: 13px; vertical-align: middle; }
+  .empty-row td { text-align: center; padding: 28px; color: #94a3b8; font-style: italic; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .badge-active   { background: #dcfce7; color: #15803d; }
+  .badge-inactive { background: #fee2e2; color: #b91c1c; }
+  .badge-mou      { background: #dbeafe; color: #1d4ed8; }
+  .badge-moa      { background: #ede9fe; color: #6d28d9; }
+  .badge-loi      { background: #fef3c7; color: #b45309; }
+  .badge-none     { background: #f1f5f9; color: #64748b; }
+  .badge-cisec    { background: #1e3a5f; color: #fff; }
+  .badge-upli     { background: #7c3aed; color: #fff; }
+  .badge-dup      { background: #fee2e2; color: #b91c1c; }
+  .badge-unique   { background: #dcfce7; color: #15803d; }
+  .badge-yes      { background: #dcfce7; color: #15803d; }
+  .badge-no       { background: #f1f5f9; color: #94a3b8; }
+
+  /* ── Collab type pills ── */
+  .collab-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; background: #e0f2fe; color: #0369a1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1100px) {
+    .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); }
+    .charts-row-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 800px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .charts-row-3 { grid-template-columns: 1fr; }
+    .header-badge { display: none; }
+  }
+  @media (max-width: 500px) {
+    .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); }
+    .kpi-grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-logo">PSP</div>
+  <div class="header-text">
+    <h1>Industry Collaboration Database<br><small style="font-size:12px;opacity:0.8">Pangkalan Data Kolaborasi Industri</small></h1>
+    <p>Politeknik Seberang Perai &nbsp;|&nbsp; CISEC &amp; UPLI &nbsp;|&nbsp; Tahun 2026</p>
+  </div>
+  <div class="header-badge">📅 Kemaskini: Nov 2026</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB NAVIGATION
+══════════════════════════════════════════ -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Overview</button>
+  <button class="tab-btn" onclick="switchTab('cisec',this)">🏢 CISEC</button>
+  <button class="tab-btn" onclick="switchTab('upli',this)">🎓 UPLI</button>
+  <button class="tab-btn" onclick="switchTab('master',this)">📋 Master Database</button>
+  <button class="tab-btn" onclick="switchTab('laporan',this)">📈 Laporan</button>
+</div>
+
+<div class="page">
+
+<!-- ══════════════════════════════════════════
+     TAB 1 — OVERVIEW
+══════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-content active">
+  <div class="section-title">📊 Overview — Ringkasan Kolaborasi Industri <span class="section-sub">Industry Collaboration Summary</span></div>
+
+  <div class="kpi-grid-5">
+    <div class="kpi-card c1">
+      <div class="kpi-label">Jumlah Rekod</div>
+      <div class="kpi-label-en">Total Records</div>
+      <div class="kpi-value">12</div>
+      <div class="kpi-sub">semua unit</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-label">Rakan Unik</div>
+      <div class="kpi-label-en">Unique Partners</div>
+      <div class="kpi-value">10</div>
+      <div class="kpi-sub">syarikat berbeza</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-label">Aktif</div>
+      <div class="kpi-label-en">Active Collaborations</div>
+      <div class="kpi-value">11</div>
+      <div class="kpi-sub">daripada 12</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-label">Tidak Aktif</div>
+      <div class="kpi-label-en">Inactive</div>
+      <div class="kpi-value">1</div>
+      <div class="kpi-sub">perlu reactivation</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-label">Rekod Duplikasi</div>
+      <div class="kpi-label-en">Duplicate Records</div>
+      <div class="kpi-value">2</div>
+      <div class="kpi-sub">CISEC &amp; UPLI</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h2>🥧 Status Kolaborasi <span>Collaboration Status</span></h2>
+      <div class="donut-wrap"><canvas id="donutStatus"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>🥧 Status MOU/MOA/LOI <span>Agreement Status</span></h2>
+      <div class="donut-wrap"><canvas id="donutMou"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h2>📊 Bilangan Syarikat Mengikut Sektor <span>Companies by Sector</span></h2>
+      <div class="bar-wrap"><canvas id="barSektor"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>📊 Bilangan Syarikat Mengikut Negeri <span>Companies by State</span></h2>
+      <div class="bar-wrap"><canvas id="barNegeri"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h2>📊 CISEC vs UPLI <span>Records by Source Unit</span></h2>
+      <div class="donut-wrap"><canvas id="donutUnit"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>📊 Jenis Kolaborasi <span>Type of Collaboration Count</span></h2>
+      <div class="bar-wrap"><canvas id="barJenis"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB 2 — CISEC
+══════════════════════════════════════════ -->
+<div id="tab-cisec" class="tab-content">
+  <div class="section-title">🏢 Rekod CISEC <span class="section-sub">Centre of Industrial Studies &amp; External Collaboration</span></div>
+
+  <div class="kpi-grid-3">
+    <div class="kpi-card c1">
+      <div class="kpi-label">Jumlah Rekod CISEC</div>
+      <div class="kpi-label-en">Total CISEC Records</div>
+      <div class="kpi-value" id="k-cisec-total">6</div>
+      <div class="kpi-sub">syarikat rakan</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-label">Aktif</div>
+      <div class="kpi-label-en">Active</div>
+      <div class="kpi-value" id="k-cisec-aktif">6</div>
+      <div class="kpi-sub">kolaborasi aktif</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-label">Ada MOU/MOA/LOI</div>
+      <div class="kpi-label-en">With Agreement</div>
+      <div class="kpi-value" id="k-cisec-mou">5</div>
+      <div class="kpi-sub">daripada 6 rekod</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <label>Sektor:</label>
+    <select id="cisecSektor" onchange="renderCisecTable()">
+      <option value="Semua">Semua / All</option>
+      <option value="Logistics">Logistics</option>
+      <option value="Islamic Banking & Finance">Islamic Banking &amp; Finance</option>
+      <option value="Manufacturing">Manufacturing</option>
+      <option value="Business Management">Business Management</option>
+    </select>
+    <label>Status:</label>
+    <select id="cisecStatus" onchange="renderCisecTable()">
+      <option value="Semua">Semua / All</option>
+      <option value="Active">✅ Active</option>
+      <option value="Inactive">❌ Inactive</option>
+    </select>
+    <label>Cari:</label>
+    <input type="text" id="cisecCari" placeholder="Nama syarikat / PIC..." oninput="renderCisecTable()" />
+    <button class="btn-reset" onclick="resetCisec()">🔄 Set Semula</button>
+  </div>
+
+  <div class="table-card">
+    <h2>📋 Senarai Syarikat Rakan — CISEC</h2>
+    <p class="table-info" id="cisec-count"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Industry ID</th>
+          <th>Nama Syarikat</th>
+          <th>Sektor</th>
+          <th>Negeri</th>
+          <th>PIC</th>
+          <th>Jawatan</th>
+          <th>No. Tel</th>
+          <th>Email</th>
+          <th>MOU/MOA</th>
+          <th>Tamat</th>
+          <th>Jenis Kolaborasi</th>
+          <th>Status</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody id="cisecTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB 3 — UPLI
+══════════════════════════════════════════ -->
+<div id="tab-upli" class="tab-content">
+  <div class="section-title">🎓 Rekod UPLI <span class="section-sub">Unit Pengurusan Latihan Industri</span></div>
+
+  <div class="kpi-grid-3">
+    <div class="kpi-card c2">
+      <div class="kpi-label">Jumlah Rekod UPLI</div>
+      <div class="kpi-label-en">Total UPLI Records</div>
+      <div class="kpi-value" id="k-upli-total">6</div>
+      <div class="kpi-sub">syarikat rakan</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-label">Aktif</div>
+      <div class="kpi-label-en">Active</div>
+      <div class="kpi-value" id="k-upli-aktif">5</div>
+      <div class="kpi-sub">kolaborasi aktif</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-label">Ada MOU/MOA/LOI</div>
+      <div class="kpi-label-en">With Agreement</div>
+      <div class="kpi-value" id="k-upli-mou">4</div>
+      <div class="kpi-sub">daripada 6 rekod</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <label>Sektor:</label>
+    <select id="upliSektor" onchange="renderUpliTable()">
+      <option value="Semua">Semua / All</option>
+      <option value="Accounting">Accounting</option>
+      <option value="Business Management">Business Management</option>
+      <option value="Islamic Banking & Finance">Islamic Banking &amp; Finance</option>
+      <option value="Logistics">Logistics</option>
+      <option value="Information Technology">Information Technology</option>
+    </select>
+    <label>Status:</label>
+    <select id="upliStatus" onchange="renderUpliTable()">
+      <option value="Semua">Semua / All</option>
+      <option value="Active">✅ Active</option>
+      <option value="Inactive">❌ Inactive</option>
+    </select>
+    <label>Cari:</label>
+    <input type="text" id="upliCari" placeholder="Nama syarikat / PIC..." oninput="renderUpliTable()" />
+    <button class="btn-reset" onclick="resetUpli()">🔄 Set Semula</button>
+  </div>
+
+  <div class="table-card">
+    <h2>📋 Senarai Syarikat Rakan — UPLI</h2>
+    <p class="table-info" id="upli-count"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Industry ID</th>
+          <th>Nama Syarikat</th>
+          <th>Sektor</th>
+          <th>Negeri</th>
+          <th>PIC</th>
+          <th>Jawatan</th>
+          <th>No. Tel</th>
+          <th>Email</th>
+          <th>MOU/MOA</th>
+          <th>Tamat</th>
+          <th>Jenis Kolaborasi</th>
+          <th>Status</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody id="upliTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB 4 — MASTER DATABASE
+══════════════════════════════════════════ -->
+<div id="tab-master" class="tab-content">
+  <div class="section-title">📋 Master Database <span class="section-sub">Pangkalan Data Industri Bersepadu (CISEC + UPLI)</span></div>
+
+  <div class="filter-bar">
+    <label>Unit:</label>
+    <select id="masterUnit" onchange="renderMasterTable()">
+      <option value="Semua">Semua</option>
+      <option value="CISEC">CISEC</option>
+      <option value="UPLI">UPLI</option>
+    </select>
+    <label>Status:</label>
+    <select id="masterStatus" onchange="renderMasterTable()">
+      <option value="Semua">Semua</option>
+      <option value="Active">✅ Active</option>
+      <option value="Inactive">❌ Inactive</option>
+    </select>
+    <label>MOU/MOA:</label>
+    <select id="masterMou" onchange="renderMasterTable()">
+      <option value="Semua">Semua</option>
+      <option value="MOU">MOU</option>
+      <option value="MOA">MOA</option>
+      <option value="LOI">LOI</option>
+      <option value="None">Tiada</option>
+    </select>
+    <label>Sektor:</label>
+    <select id="masterSektor" onchange="renderMasterTable()">
+      <option value="Semua">Semua</option>
+      <option value="Logistics">Logistics</option>
+      <option value="Accounting">Accounting</option>
+      <option value="Islamic Banking & Finance">Islamic Banking &amp; Finance</option>
+      <option value="Business Management">Business Management</option>
+      <option value="Manufacturing">Manufacturing</option>
+      <option value="Information Technology">IT</option>
+    </select>
+    <label>Cari:</label>
+    <input type="text" id="masterCari" placeholder="Nama syarikat..." oninput="renderMasterTable()" />
+    <button class="btn-reset" onclick="resetMaster()">🔄 Set Semula</button>
+  </div>
+
+  <div class="table-card">
+    <h2>📋 Semua Rekod Industri (Master Database)</h2>
+    <p class="table-info" id="master-count"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>ID</th>
+          <th>Nama Syarikat</th>
+          <th>No. Daftar</th>
+          <th>Kategori</th>
+          <th>Sektor</th>
+          <th>Negeri</th>
+          <th>Daerah</th>
+          <th>PIC</th>
+          <th>Tel</th>
+          <th>Email</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>MOU/MOA</th>
+          <th>Tamat</th>
+          <th>Jenis Kolaborasi</th>
+          <th>Duplikat</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody id="masterTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB 5 — LAPORAN
+══════════════════════════════════════════ -->
+<div id="tab-laporan" class="tab-content">
+  <div class="section-title">📈 Laporan &amp; Analitik <span class="section-sub">Reports &amp; Analytics</span></div>
+
+  <div class="charts-row-3">
+    <div class="chart-card">
+      <h2>📊 Kategori Industri <span>Industry Category</span></h2>
+      <div class="donut-wrap"><canvas id="donutKategori"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>📊 Jenis Perjanjian <span>Agreement Type</span></h2>
+      <div class="donut-wrap"><canvas id="donutPerjanjian"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>📊 Status Kolaborasi <span>Collaboration Status</span></h2>
+      <div class="donut-wrap"><canvas id="donutStatusL"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h2>📊 Pecahan Sektor <span>Sector Distribution</span></h2>
+      <div class="bar-wrap"><canvas id="barSektorL"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>📊 Pecahan Negeri <span>State Distribution</span></h2>
+      <div class="bar-wrap"><canvas id="barNegeriL"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px">
+    <h2>📊 Bilangan Jenis Kolaborasi <span>Collaboration Type Count (all records)</span></h2>
+    <div class="bar-wrap"><canvas id="barJenisL"></canvas></div>
+  </div>
+
+  <!-- Collab matrix table -->
+  <div class="table-card">
+    <h2>🔍 Matriks Kolaborasi Mengikut Syarikat <span style="font-size:11px;color:#94a3b8;font-weight:400">Collaboration Matrix by Company</span></h2>
+    <table id="matrixTable" style="min-width:700px">
+      <thead>
+        <tr>
+          <th>Syarikat</th>
+          <th>Unit</th>
+          <th>Internship</th>
+          <th>Placement</th>
+          <th>Training</th>
+          <th>CSR</th>
+          <th>Research</th>
+          <th>Sponsorship</th>
+          <th>Industrial Visit</th>
+          <th>Employment</th>
+        </tr>
+      </thead>
+      <tbody id="matrixBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<!-- ══════════════════════════════════════════
+     DATA & JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════
+   DATA — MASTER (dari Industry_Database_CISEC_UPLI.xlsx)
+═══════════════════════════════════════ */
+const MASTER = [
+  {
+    id:"IND-0001", nama:"Alpha Logistics Sdn Bhd", regNo:"201901001111",
+    kategori:"Industry Partner", sektor:"Logistics", negeri:"Penang", daerah:"Seberang Perai",
+    alamat:"No. 12, Jalan Industri, Prai", web:"www.alphalogistics.com",
+    pic:"Mr. Hafiz", jawatan:"HR Manager", tel:"012-3456789", email:"hafiz@alphalogistics.com",
+    unit:"CISEC", status:"Active", mulaMou:"2023-02-15", akhirKolaborasi:"2026-03-20",
+    mouStatus:"MOU", expiryDate:"2026-12-31", program:"Logistics",
+    jenis:["Internship","Industrial Visit"],
+    internship:"Yes", placement:"Yes", training:"No", csr:"No", research:"No", sponsorship:"No", industrialVisit:"Yes", employment:"Yes",
+    dupFlag:"DUPLICATE", remarks:"Strong internship partner"
+  },
+  {
+    id:"IND-0002", nama:"Beta Accountancy Services", regNo:"202001002222",
+    kategori:"SME", sektor:"Accounting", negeri:"Penang", daerah:"George Town",
+    alamat:"Lot 22, Lebuh Pantai", web:"www.betaaccount.com",
+    pic:"Ms. Aina", jawatan:"Partner", tel:"013-2223344", email:"aina@betaaccount.com",
+    unit:"UPLI", status:"Active", mulaMou:"2022-06-10", akhirKolaborasi:"2025-10-01",
+    mouStatus:"MOA", expiryDate:"2026-06-30", program:"Accounting",
+    jenis:["Internship","Training"],
+    internship:"Yes", placement:"Yes", training:"Yes", csr:"No", research:"No", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"UNIQUE", remarks:"Suitable for accounting placement"
+  },
+  {
+    id:"IND-0003", nama:"Cahaya Islamic Finance Berhad", regNo:"199901003333",
+    kategori:"Corporate", sektor:"Islamic Banking & Finance", negeri:"Kedah", daerah:"Alor Setar",
+    alamat:"Menara Cahaya, Alor Setar", web:"www.cahayafinance.com",
+    pic:"Mr. Farhan", jawatan:"Branch Manager", tel:"014-4445566", email:"farhan@cahayafinance.com",
+    unit:"CISEC", status:"Active", mulaMou:"2024-01-12", akhirKolaborasi:"2026-01-15",
+    mouStatus:"MOU", expiryDate:"2027-01-11", program:"Islamic Banking & Finance",
+    jenis:["Training","Talk","Employment Opportunity"],
+    internship:"No", placement:"No", training:"Yes", csr:"No", research:"No", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"UNIQUE", remarks:"Potential guest speaker"
+  },
+  {
+    id:"IND-0004", nama:"Delima Trading Enterprise", regNo:"201801004444",
+    kategori:"SME", sektor:"Business Management", negeri:"Perak", daerah:"Ipoh",
+    alamat:"No. 8, Medan Meru", web:"www.delimatrading.my",
+    pic:"Pn. Salmah", jawatan:"Owner", tel:"016-7778899", email:"admin@delimatrading.my",
+    unit:"UPLI", status:"Inactive", mulaMou:"2021-04-01", akhirKolaborasi:"2023-08-20",
+    mouStatus:"None", expiryDate:"2023-12-31", program:"Business Management",
+    jenis:["CSR","Entrepreneurship Project"],
+    internship:"No", placement:"No", training:"No", csr:"Yes", research:"No", sponsorship:"No", industrialVisit:"No", employment:"No",
+    dupFlag:"UNIQUE", remarks:"Need reactivation"
+  },
+  {
+    id:"IND-0005", nama:"EcoPack Manufacturing Sdn Bhd", regNo:"202101005555",
+    kategori:"Industry Partner", sektor:"Manufacturing", negeri:"Selangor", daerah:"Shah Alam",
+    alamat:"Seksyen 15, Shah Alam", web:"www.ecopack.com.my",
+    pic:"Mr. Daniel", jawatan:"Operations Manager", tel:"017-1112233", email:"daniel@ecopack.com.my",
+    unit:"CISEC", status:"Active", mulaMou:"2024-09-05", akhirKolaborasi:"2026-04-02",
+    mouStatus:"MOU", expiryDate:"2026-05-30", program:"Logistics; Business Management",
+    jenis:["Industrial Visit","Research","Internship"],
+    internship:"Yes", placement:"Yes", training:"No", csr:"No", research:"Yes", sponsorship:"No", industrialVisit:"Yes", employment:"No",
+    dupFlag:"UNIQUE", remarks:"Expiry within monitoring"
+  },
+  {
+    id:"IND-0006", nama:"Futura Digital Solutions", regNo:"202201006666",
+    kategori:"Technology Partner", sektor:"Information Technology", negeri:"Kuala Lumpur", daerah:"Cheras",
+    alamat:"Wisma Futura, Cheras", web:"www.futuradigital.my",
+    pic:"Ms. Izzah", jawatan:"Project Lead", tel:"018-9998888", email:"izzah@futuradigital.my",
+    unit:"UPLI", status:"Active", mulaMou:"2025-03-18", akhirKolaborasi:"2026-02-12",
+    mouStatus:"MOA", expiryDate:"2028-03-17", program:"Business Management",
+    jenis:["Training","Digital Project"],
+    internship:"No", placement:"No", training:"Yes", csr:"No", research:"Yes", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"UNIQUE", remarks:"Good for digital upskilling"
+  },
+  {
+    id:"IND-0007", nama:"Global Freight Network", regNo:"201701007777",
+    kategori:"Industry Partner", sektor:"Logistics", negeri:"Selangor", daerah:"Klang",
+    alamat:"Port Klang Industrial Area", web:"www.globalfreight.net",
+    pic:"Mr. Lim", jawatan:"Talent Manager", tel:"019-8887766", email:"lim@globalfreight.net",
+    unit:"CISEC", status:"Active", mulaMou:"2023-07-22", akhirKolaborasi:"2025-12-10",
+    mouStatus:"MOU", expiryDate:"2026-07-21", program:"Logistics",
+    jenis:["Internship","Employment Opportunity"],
+    internship:"Yes", placement:"Yes", training:"No", csr:"No", research:"No", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"UNIQUE", remarks:"High placement capacity"
+  },
+  {
+    id:"IND-0008", nama:"Harmoni Zakat Advisory", regNo:"201501008888",
+    kategori:"NGO/Agency", sektor:"Islamic Banking & Finance", negeri:"Penang", daerah:"Butterworth",
+    alamat:"Jalan Bagan Luar", web:"www.harmonizakat.org",
+    pic:"Ustaz Amir", jawatan:"Coordinator", tel:"011-22223333", email:"amir@harmonizakat.org",
+    unit:"UPLI", status:"Active", mulaMou:"2024-11-01", akhirKolaborasi:"2026-03-01",
+    mouStatus:"LOI", expiryDate:"2026-11-01", program:"Islamic Banking & Finance",
+    jenis:["CSR","Training"],
+    internship:"No", placement:"No", training:"Yes", csr:"Yes", research:"No", sponsorship:"No", industrialVisit:"No", employment:"No",
+    dupFlag:"UNIQUE", remarks:"Community project partner"
+  },
+  {
+    id:"IND-0009", nama:"Alpha Logistics Sdn Bhd", regNo:"201901001111",
+    kategori:"Industry Partner", sektor:"Logistics", negeri:"Penang", daerah:"Seberang Perai",
+    alamat:"No. 12, Jalan Industri, Prai", web:"www.alphalogistics.com",
+    pic:"Mr. Hafiz", jawatan:"HR Manager", tel:"012-3456789", email:"hafiz@alphalogistics.com",
+    unit:"UPLI", status:"Active", mulaMou:"2023-02-15", akhirKolaborasi:"2026-03-20",
+    mouStatus:"MOU", expiryDate:"2026-12-31", program:"Logistics",
+    jenis:["Internship"],
+    internship:"Yes", placement:"Yes", training:"No", csr:"No", research:"No", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"DUPLICATE", remarks:"Duplicate from CISEC"
+  },
+  {
+    id:"IND-0010", nama:"Ilham Retail Academy", regNo:"202301009999",
+    kategori:"Training Provider", sektor:"Business Management", negeri:"Perlis", daerah:"Kangar",
+    alamat:"Pusat Komersial Kangar", web:"www.ilhamretail.edu.my",
+    pic:"Ms. Nurin", jawatan:"Training Director", tel:"012-1010101", email:"nurin@ilhamretail.edu.my",
+    unit:"CISEC", status:"Active", mulaMou:"2025-08-01", akhirKolaborasi:"2026-01-30",
+    mouStatus:"None", expiryDate:"2026-08-01", program:"Business Management",
+    jenis:["Training","Sponsorship"],
+    internship:"No", placement:"No", training:"Yes", csr:"No", research:"No", sponsorship:"Yes", industrialVisit:"No", employment:"No",
+    dupFlag:"UNIQUE", remarks:"Potential short course partner"
+  },
+  {
+    id:"IND-0011", nama:"Jaya Audit & Tax PLT", regNo:"201601010101",
+    kategori:"SME", sektor:"Accounting", negeri:"Kedah", daerah:"Sungai Petani",
+    alamat:"Taman Ria Jaya", web:"www.jayaaudit.my",
+    pic:"Mr. Razak", jawatan:"Director", tel:"013-5656565", email:"razak@jayaaudit.my",
+    unit:"UPLI", status:"Active", mulaMou:"2022-10-10", akhirKolaborasi:"2026-02-08",
+    mouStatus:"MOU", expiryDate:"2025-12-31", program:"Accounting",
+    jenis:["Internship","Training"],
+    internship:"Yes", placement:"Yes", training:"Yes", csr:"No", research:"No", sponsorship:"No", industrialVisit:"No", employment:"Yes",
+    dupFlag:"UNIQUE", remarks:"MOU expired/renewal needed"
+  },
+  {
+    id:"IND-0012", nama:"Kembara Supply Chain Sdn Bhd", regNo:"202401012121",
+    kategori:"Industry Partner", sektor:"Logistics", negeri:"Perak", daerah:"Taiping",
+    alamat:"Kawasan Perindustrian Kamunting", web:"www.kembarasupply.my",
+    pic:"Ms. Yana", jawatan:"HR Executive", tel:"014-7878787", email:"yana@kembarasupply.my",
+    unit:"CISEC", status:"Active", mulaMou:"2025-01-20", akhirKolaborasi:"2026-04-10",
+    mouStatus:"LOI", expiryDate:"2027-01-20", program:"Logistics",
+    jenis:["Internship","Industrial Visit"],
+    internship:"Yes", placement:"Yes", training:"No", csr:"No", research:"No", sponsorship:"No", industrialVisit:"Yes", employment:"No",
+    dupFlag:"UNIQUE", remarks:"New strategic partner"
+  },
+];
+
+/* ═══════════════════════════════════════
+   CHART INSTANCES
+═══════════════════════════════════════ */
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+/* ═══════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════ */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'overview') renderOverview();
+  if (tab === 'cisec')    renderCisecTable();
+  if (tab === 'upli')     renderUpliTable();
+  if (tab === 'master')   renderMasterTable();
+  if (tab === 'laporan')  renderLaporan();
+}
+
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
+function mouBadge(s) {
+  const cls = { MOU:'badge-mou', MOA:'badge-moa', LOI:'badge-loi', None:'badge-none' }[s] || 'badge-none';
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+function statusBadge(s) {
+  return s === 'Active'
+    ? `<span class="badge badge-active">✅ Active</span>`
+    : `<span class="badge badge-inactive">❌ Inactive</span>`;
+}
+function unitBadge(u) {
+  return u === 'CISEC'
+    ? `<span class="badge badge-cisec">CISEC</span>`
+    : `<span class="badge badge-upli">UPLI</span>`;
+}
+function yesNoBadge(v) {
+  return v === 'Yes'
+    ? `<span class="badge badge-yes">✔</span>`
+    : `<span class="badge badge-no">—</span>`;
+}
+function collabPills(arr) {
+  if (!arr || arr.length === 0) return '—';
+  return `<div class="collab-pills">${arr.map(j => `<span class="pill">${j}</span>`).join('')}</div>`;
+}
+function count(arr, field, val) { return arr.filter(r => r[field] === val).length; }
+
+/* ═══════════════════════════════════════
+   TAB 1 — OVERVIEW CHARTS
+═══════════════════════════════════════ */
+function renderOverview() {
+  const aktif    = count(MASTER,'status','Active');
+  const inactive = count(MASTER,'status','Inactive');
+  const mouC = {MOU:0,MOA:0,LOI:0,None:0};
+  MASTER.forEach(r => { mouC[r.mouStatus] = (mouC[r.mouStatus]||0)+1; });
+  const sektorC = {}, negeriC = {};
+  MASTER.forEach(r => {
+    sektorC[r.sektor] = (sektorC[r.sektor]||0)+1;
+    negeriC[r.negeri] = (negeriC[r.negeri]||0)+1;
+  });
+  const jenisC = {Internship:0,Placement:0,Training:0,CSR:0,Research:0,Sponsorship:0,'Industrial Visit':0,Employment:0};
+  MASTER.forEach(r => {
+    if(r.internship==='Yes') jenisC['Internship']++;
+    if(r.placement==='Yes') jenisC['Placement']++;
+    if(r.training==='Yes') jenisC['Training']++;
+    if(r.csr==='Yes') jenisC['CSR']++;
+    if(r.research==='Yes') jenisC['Research']++;
+    if(r.sponsorship==='Yes') jenisC['Sponsorship']++;
+    if(r.industrialVisit==='Yes') jenisC['Industrial Visit']++;
+    if(r.employment==='Yes') jenisC['Employment']++;
+  });
+  const cisecN = count(MASTER,'unit','CISEC'), upliN = count(MASTER,'unit','UPLI');
+
+  destroyChart('donutStatus');
+  charts['donutStatus'] = new Chart(document.getElementById('donutStatus'), {
+    type:'doughnut', data:{ labels:['Active','Inactive'], datasets:[{ data:[aktif,inactive], backgroundColor:['#059669','#ef4444'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:12}, padding:10 } } } }
+  });
+
+  destroyChart('donutMou');
+  charts['donutMou'] = new Chart(document.getElementById('donutMou'), {
+    type:'doughnut', data:{ labels:['MOU','MOA','LOI','Tiada'], datasets:[{ data:[mouC.MOU,mouC.MOA,mouC.LOI,mouC.None], backgroundColor:['#1d4ed8','#6d28d9','#b45309','#94a3b8'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:12}, padding:10 } } } }
+  });
+
+  destroyChart('barSektor');
+  charts['barSektor'] = new Chart(document.getElementById('barSektor'), {
+    type:'bar', data:{ labels:Object.keys(sektorC), datasets:[{ data:Object.values(sektorC), backgroundColor:['#1e3a5f','#7c3aed','#059669','#d97706','#db2777','#0ea5e9'], borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f1f5f9'}} }, plugins:{legend:{display:false}} }
+  });
+
+  destroyChart('barNegeri');
+  charts['barNegeri'] = new Chart(document.getElementById('barNegeri'), {
+    type:'bar', data:{ labels:Object.keys(negeriC), datasets:[{ data:Object.values(negeriC), backgroundColor:'#1e3a5f', borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f1f5f9'}} }, plugins:{legend:{display:false}} }
+  });
+
+  destroyChart('donutUnit');
+  charts['donutUnit'] = new Chart(document.getElementById('donutUnit'), {
+    type:'doughnut', data:{ labels:['CISEC','UPLI'], datasets:[{ data:[cisecN,upliN], backgroundColor:['#1e3a5f','#7c3aed'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:12}, padding:10 } } } }
+  });
+
+  destroyChart('barJenis');
+  charts['barJenis'] = new Chart(document.getElementById('barJenis'), {
+    type:'bar', data:{ labels:Object.keys(jenisC), datasets:[{ data:Object.values(jenisC), backgroundColor:['#1e3a5f','#059669','#d97706','#db2777','#7c3aed','#0ea5e9','#f59e0b','#10b981'], borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f1f5f9'}} }, plugins:{legend:{display:false}} }
+  });
+}
+
+/* ═══════════════════════════════════════
+   RENDER TABLE (generic)
+═══════════════════════════════════════ */
+function buildRow(r, i) {
+  return `<tr>
+    <td>${i+1}</td>
+    <td style="font-size:11px;color:#64748b">${r.id}</td>
+    <td style="font-weight:600;white-space:nowrap">${r.nama}</td>
+    <td style="font-size:12px;color:#475569">${r.sektor}</td>
+    <td>${r.negeri}</td>
+    <td style="white-space:nowrap">${r.pic}</td>
+    <td style="font-size:12px;color:#64748b">${r.jawatan}</td>
+    <td style="font-size:12px">${r.tel}</td>
+    <td style="font-size:11px;color:#0369a1"><a href="mailto:${r.email}">${r.email}</a></td>
+    <td>${mouBadge(r.mouStatus)}</td>
+    <td style="font-size:12px">${r.expiryDate}</td>
+    <td>${collabPills(r.jenis)}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td style="font-size:11px;color:#475569;max-width:160px">${r.remarks}</td>
+  </tr>`;
+}
+
+/* ═══════════════════════════════════════
+   TAB 2 — CISEC TABLE
+═══════════════════════════════════════ */
+function renderCisecTable() {
+  const sektor = document.getElementById('cisecSektor').value;
+  const status = document.getElementById('cisecStatus').value;
+  const cari   = document.getElementById('cisecCari').value.toLowerCase();
+  const data = MASTER.filter(r => r.unit === 'CISEC'
+    && (sektor === 'Semua' || r.sektor === sektor)
+    && (status === 'Semua' || r.status === status)
+    && (cari === '' || r.nama.toLowerCase().includes(cari) || r.pic.toLowerCase().includes(cari))
+  );
+  document.getElementById('cisec-count').textContent = `Menunjukkan ${data.length} daripada ${MASTER.filter(r=>r.unit==='CISEC').length} rekod CISEC`;
+  const tbody = document.getElementById('cisecTable');
+  tbody.innerHTML = data.length === 0
+    ? '<tr class="empty-row"><td colspan="14">Tiada rekod ditemui.</td></tr>'
+    : data.map((r,i) => buildRow(r,i)).join('');
+}
+function resetCisec() {
+  document.getElementById('cisecSektor').value = 'Semua';
+  document.getElementById('cisecStatus').value = 'Semua';
+  document.getElementById('cisecCari').value = '';
+  renderCisecTable();
+}
+
+/* ═══════════════════════════════════════
+   TAB 3 — UPLI TABLE
+═══════════════════════════════════════ */
+function renderUpliTable() {
+  const sektor = document.getElementById('upliSektor').value;
+  const status = document.getElementById('upliStatus').value;
+  const cari   = document.getElementById('upliCari').value.toLowerCase();
+  const data = MASTER.filter(r => r.unit === 'UPLI'
+    && (sektor === 'Semua' || r.sektor === sektor)
+    && (status === 'Semua' || r.status === status)
+    && (cari === '' || r.nama.toLowerCase().includes(cari) || r.pic.toLowerCase().includes(cari))
+  );
+  document.getElementById('upli-count').textContent = `Menunjukkan ${data.length} daripada ${MASTER.filter(r=>r.unit==='UPLI').length} rekod UPLI`;
+  const tbody = document.getElementById('upliTable');
+  tbody.innerHTML = data.length === 0
+    ? '<tr class="empty-row"><td colspan="14">Tiada rekod ditemui.</td></tr>'
+    : data.map((r,i) => buildRow(r,i)).join('');
+}
+function resetUpli() {
+  document.getElementById('upliSektor').value = 'Semua';
+  document.getElementById('upliStatus').value = 'Semua';
+  document.getElementById('upliCari').value = '';
+  renderUpliTable();
+}
+
+/* ═══════════════════════════════════════
+   TAB 4 — MASTER TABLE
+═══════════════════════════════════════ */
+function renderMasterTable() {
+  const unit   = document.getElementById('masterUnit').value;
+  const status = document.getElementById('masterStatus').value;
+  const mou    = document.getElementById('masterMou').value;
+  const sektor = document.getElementById('masterSektor').value;
+  const cari   = document.getElementById('masterCari').value.toLowerCase();
+  const data = MASTER.filter(r =>
+    (unit   === 'Semua' || r.unit       === unit)   &&
+    (status === 'Semua' || r.status     === status) &&
+    (mou    === 'Semua' || r.mouStatus  === mou)    &&
+    (sektor === 'Semua' || r.sektor     === sektor) &&
+    (cari === '' || r.nama.toLowerCase().includes(cari))
+  );
+  document.getElementById('master-count').textContent = `Menunjukkan ${data.length} daripada ${MASTER.length} rekod`;
+  const tbody = document.getElementById('masterTable');
+  tbody.innerHTML = data.length === 0
+    ? '<tr class="empty-row"><td colspan="18">Tiada rekod ditemui.</td></tr>'
+    : data.map((r,i) => `<tr>
+      <td>${i+1}</td>
+      <td style="font-size:11px;color:#64748b">${r.id}</td>
+      <td style="font-weight:600;white-space:nowrap">${r.nama}</td>
+      <td style="font-size:11px;color:#64748b">${r.regNo}</td>
+      <td style="font-size:12px">${r.kategori}</td>
+      <td style="font-size:12px">${r.sektor}</td>
+      <td>${r.negeri}</td>
+      <td style="font-size:12px;color:#64748b">${r.daerah}</td>
+      <td style="white-space:nowrap">${r.pic}</td>
+      <td style="font-size:12px">${r.tel}</td>
+      <td style="font-size:11px;color:#0369a1"><a href="mailto:${r.email}">${r.email}</a></td>
+      <td>${unitBadge(r.unit)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${mouBadge(r.mouStatus)}</td>
+      <td style="font-size:12px">${r.expiryDate}</td>
+      <td>${collabPills(r.jenis)}</td>
+      <td><span class="badge ${r.dupFlag==='DUPLICATE'?'badge-dup':'badge-unique'}">${r.dupFlag}</span></td>
+      <td style="font-size:11px;color:#475569;max-width:140px">${r.remarks}</td>
+    </tr>`).join('');
+}
+function resetMaster() {
+  document.getElementById('masterUnit').value   = 'Semua';
+  document.getElementById('masterStatus').value = 'Semua';
+  document.getElementById('masterMou').value    = 'Semua';
+  document.getElementById('masterSektor').value = 'Semua';
+  document.getElementById('masterCari').value   = '';
+  renderMasterTable();
+}
+
+/* ═══════════════════════════════════════
+   TAB 5 — LAPORAN CHARTS + MATRIX
+═══════════════════════════════════════ */
+function renderLaporan() {
+  const kategoriC = {}, sektorC = {}, negeriC = {};
+  const mouC2 = {MOU:0,MOA:0,LOI:0,None:0};
+  const jenisC = {Internship:0,Placement:0,Training:0,CSR:0,Research:0,Sponsorship:0,'Industrial Visit':0,Employment:0};
+  const aktif = count(MASTER,'status','Active'), inactive = count(MASTER,'status','Inactive');
+  MASTER.forEach(r => {
+    kategoriC[r.kategori] = (kategoriC[r.kategori]||0)+1;
+    sektorC[r.sektor]     = (sektorC[r.sektor]||0)+1;
+    negeriC[r.negeri]     = (negeriC[r.negeri]||0)+1;
+    mouC2[r.mouStatus]    = (mouC2[r.mouStatus]||0)+1;
+    if(r.internship==='Yes') jenisC['Internship']++;
+    if(r.placement==='Yes')  jenisC['Placement']++;
+    if(r.training==='Yes')   jenisC['Training']++;
+    if(r.csr==='Yes')        jenisC['CSR']++;
+    if(r.research==='Yes')   jenisC['Research']++;
+    if(r.sponsorship==='Yes')jenisC['Sponsorship']++;
+    if(r.industrialVisit==='Yes') jenisC['Industrial Visit']++;
+    if(r.employment==='Yes') jenisC['Employment']++;
+  });
+
+  destroyChart('donutKategori');
+  charts['donutKategori'] = new Chart(document.getElementById('donutKategori'), {
+    type:'doughnut', data:{ labels:Object.keys(kategoriC), datasets:[{ data:Object.values(kategoriC), backgroundColor:['#1e3a5f','#7c3aed','#059669','#d97706','#db2777'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'60%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  destroyChart('donutPerjanjian');
+  charts['donutPerjanjian'] = new Chart(document.getElementById('donutPerjanjian'), {
+    type:'doughnut', data:{ labels:['MOU','MOA','LOI','Tiada'], datasets:[{ data:[mouC2.MOU,mouC2.MOA,mouC2.LOI,mouC2.None], backgroundColor:['#1d4ed8','#6d28d9','#b45309','#94a3b8'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'60%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  destroyChart('donutStatusL');
+  charts['donutStatusL'] = new Chart(document.getElementById('donutStatusL'), {
+    type:'doughnut', data:{ labels:['Active','Inactive'], datasets:[{ data:[aktif,inactive], backgroundColor:['#059669','#ef4444'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ cutout:'60%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  destroyChart('barSektorL');
+  charts['barSektorL'] = new Chart(document.getElementById('barSektorL'), {
+    type:'bar', data:{ labels:Object.keys(sektorC), datasets:[{ data:Object.values(sektorC), backgroundColor:'#1e3a5f', borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1}} }, plugins:{legend:{display:false}} }
+  });
+
+  destroyChart('barNegeriL');
+  charts['barNegeriL'] = new Chart(document.getElementById('barNegeriL'), {
+    type:'bar', data:{ labels:Object.keys(negeriC), datasets:[{ data:Object.values(negeriC), backgroundColor:'#7c3aed', borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1}} }, plugins:{legend:{display:false}} }
+  });
+
+  destroyChart('barJenisL');
+  charts['barJenisL'] = new Chart(document.getElementById('barJenisL'), {
+    type:'bar', data:{ labels:Object.keys(jenisC), datasets:[{ data:Object.values(jenisC), backgroundColor:['#1e3a5f','#059669','#d97706','#db2777','#7c3aed','#0ea5e9','#f59e0b','#10b981'], borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1}} }, plugins:{legend:{display:false}} }
+  });
+
+  // Matrix table
+  document.getElementById('matrixBody').innerHTML = MASTER.map(r => `<tr>
+    <td style="font-weight:600;white-space:nowrap">${r.nama}</td>
+    <td>${unitBadge(r.unit)}</td>
+    <td>${yesNoBadge(r.internship)}</td>
+    <td>${yesNoBadge(r.placement)}</td>
+    <td>${yesNoBadge(r.training)}</td>
+    <td>${yesNoBadge(r.csr)}</td>
+    <td>${yesNoBadge(r.research)}</td>
+    <td>${yesNoBadge(r.sponsorship)}</td>
+    <td>${yesNoBadge(r.industrialVisit)}</td>
+    <td>${yesNoBadge(r.employment)}</td>
+  </tr>`).join('');
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderOverview();
+  renderCisecTable();
+  renderUpliTable();
+  renderMasterTable();
+});
+</script>
+
+</body>
+</html>
